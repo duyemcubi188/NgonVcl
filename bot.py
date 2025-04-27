@@ -4,7 +4,7 @@ import csv
 import numpy as np
 from scipy.stats import kurtosis, skew
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import datetime
 import os
 
@@ -154,12 +154,12 @@ def save_history(md5, result, probability, confidence, method_used):
         writer.writerow(data)
 
 # Hàm xử lý tin nhắn từ người dùng
-def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: CallbackContext):
     text = update.message.text.strip()
     chat_id = update.message.chat.id
     
     if not is_valid_md5(text):
-        update.message.reply_text("⚠️ Lỗi: Chuỗi gửi không phải MD5 hợp lệ. Vui lòng gửi chuỗi MD5 gồm 32 ký tự hex (0-9, a-f).")
+        await update.message.reply_text("⚠️ Lỗi: Chuỗi gửi không phải MD5 hợp lệ. Vui lòng gửi chuỗi MD5 gồm 32 ký tự hex (0-9, a-f).")
         return
     
     result, prob, confidence, method_used = analyze_md5(text)
@@ -182,18 +182,16 @@ def handle_message(update: Update, context: CallbackContext):
 🕰️ <i>{datetime.datetime.utcnow().strftime('%H:%M:%S dd/MM/yyyy')}</i>
 """
 
-    update.message.reply_text(message, parse_mode="HTML")
+    await update.message.reply_text(message, parse_mode="HTML")
     save_history(text, result, prob, confidence, method_used)
 
 def main():
-    updater = Updater("7287917776:AAFKd8x1WY1JfnmG0POE4gm-iFAL28ir9FY")
-    dispatcher = updater.dispatcher
+    application = Application.builder().token("7287917776:AAFKd8x1WY1JfnmG0POE4gm-iFAL28ir9FY").build()
 
     # Thêm handler cho các tin nhắn văn bản
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
